@@ -3,10 +3,10 @@ resource "aws_vpc" "vpc" {
   cidr_block       = var.vpc_cidr
   instance_tenancy = "default"
 
-  tags =  {
-      Name = var.vpc_name
-    }
-  
+  tags = {
+    Name = var.vpc_name
+  }
+
 }
 
 resource "aws_subnet" "public_subnet" {
@@ -17,18 +17,18 @@ resource "aws_subnet" "public_subnet" {
   map_public_ip_on_launch = true
 
   tags = {
-      Name = var.public_subnet_name
-    }
-  
+    Name = var.public_subnet_name
+  }
+
 }
 
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.vpc.id
 
   tags = {
-      Name = var.igw_name
-    }
-  
+    Name = var.igw_name
+  }
+
 }
 
 resource "aws_route_table" "public_rt" {
@@ -42,9 +42,9 @@ resource "aws_route_table" "public_rt" {
   }
 
   tags = {
-      Name = var.public_rt_name
-    }
-  
+    Name = var.public_rt_name
+  }
+
 }
 
 resource "aws_route_table_association" "public_sub" {
@@ -55,14 +55,21 @@ resource "aws_route_table_association" "public_sub" {
 
 
 #------------------------------------------------sg------------------------------------------------#
-resource "aws_security_group" "ssh_sg" {
-  name        = "ssh_sg"
+resource "aws_security_group" "web_sg" {
+  name        = "web_sg"
   description = "Allow SSH inbound"
   vpc_id      = aws_vpc.vpc.id
 
   ingress {
     from_port   = 22
     to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  ingress {
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -75,7 +82,7 @@ resource "aws_security_group" "ssh_sg" {
   }
 
   tags = {
-    Name = "ssh_sg"
+    Name = "web_sg"
   }
 }
 
@@ -85,7 +92,7 @@ resource "aws_instance" "ubuntu" {
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = var.instance_type
   subnet_id                   = aws_subnet.public_subnet[0].id
-  vpc_security_group_ids      = [aws_security_group.ssh_sg.id]
+  vpc_security_group_ids      = [aws_security_group.web_sg.id]
   key_name                    = var.key_pair_name
   associate_public_ip_address = true
 
@@ -98,7 +105,7 @@ resource "aws_instance" "centos" {
   ami                         = data.aws_ami.centos_stream_9.id
   instance_type               = var.instance_type
   subnet_id                   = aws_subnet.public_subnet[1].id
-  vpc_security_group_ids      = [aws_security_group.ssh_sg.id]
+  vpc_security_group_ids      = [aws_security_group.web_sg.id]
   key_name                    = var.key_pair_name
   associate_public_ip_address = true
 
@@ -169,7 +176,7 @@ data "aws_availability_zones" "available" {
 }
 
 data "aws_ami" "ubuntu" {
-  owners      = ["099720109477"] # Canonical
+  owners = ["099720109477"] # Canonical
 
   filter {
     name   = "name"
